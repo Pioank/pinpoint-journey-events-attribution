@@ -1,18 +1,18 @@
 # pinpoint-journey-events-attribution
 
-Background
+**Background**
 
 Marketing campaigns come with associated cost. Marketers use KPIs to assess their effectiveness and calculate ROI. While Pinpoint provides certain metrics such as email open/read, it does not allow marketers to attribute any custom events to Campaigns or Journeys. The latter results to a marketing spend without the possibility of ROI calculation and not knowing what works well for customers. 
 
-Ideal state
+**Ideal state**
 
 When the marketer is launching an email campaign, they should have a KPI, while the email itself should contain a CTA with a goal aligned to the KPI above such as purchase, subscription or code activation. Email campaign goals are usually on site events and if the customer has clicked or read the email, then that customer's events should be attributed to that email campaign. In the end of an email campaign, the marketer should be able to assess its effectiveness and calculate its ROI.
 
-Solution 
+**Solution**
 
 The solution is enabling marketers to attribute Pinpoint custom events following a customer's interaction with an email, SMS or custom channel. Additionally marketers are able to define a lookback window on a Pinpoint application level. The solution is utilising Cognito for its user attributes' storage, Pinpoint Journeys, CloudWatch, Lambda and DynamoDB. The solution is applicable only for Pinpoint Journeys and the customer's custom events can be attributed only under one marketing campaign at a time. If a customer interacts with a new marketing campaign while they are already in one, then the new one will overwrite the old and any new custom events will be attributed to the new email campaign. 
 
-Considerations
+**Considerations**
 
 1)	You will need to install Amplify SDK for sending events to Pinpoint and Cognito for user management
 2)	All Pinpoint users should have a user attribute with the Cognito username
