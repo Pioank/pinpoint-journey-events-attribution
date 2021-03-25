@@ -24,11 +24,11 @@ Considerations
 7)	Push notification channel requires additional work 
 8)	Supports only one campaign per user at a time and if a user enters to a second campaign then the new campaign will overwrite the old one
 
-# Architecture
+## Architecture
 ![alt text](https://github.com/Pioank/pinpoint-journey-events-attribution/blob/main/Images/SolutionArchitecture.JPG)
 
-# Business Logic User Tagging
+## Business Logic User Tagging
 ![alt text](https://github.com/Pioank/pinpoint-journey-events-attribution/blob/main/Images/BusinessLogic-UserTagging.JPG)
 
-# Business Logic User Expiration
+## Business Logic User Expiration
 ![alt text](https://github.com/Pioank/pinpoint-journey-events-attribution/blob/main/Images/BusinessLogic-UserExpiration.JPG)
