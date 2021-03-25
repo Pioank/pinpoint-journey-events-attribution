@@ -1,0 +1,192 @@
+  
+AWSTemplateFormatVersion: 2010-09-09
+Description: Pinpoint Journey Events Attribution
+
+Parameters:
+  PinpointProjectId:
+    Type: String
+    Description: Enter the Amazon Pinpoint Project ID, where you would like to implement this solution
+  LambdaCodeBucketName:
+    Type: String
+    Description: Provide a name for the S3 bucket where the Lambda code will be hosted
+  CognitoUserPoolID:
+    Type: String
+    Description: The Cognito User Pool ID for the web or native app
+  LookbackWindow:
+    Type: Number
+    Description: Define the lookback window in days for the Pinpoint Journeys
+
+
+Resources:
+
+#### LAMBDA COGNITO USERS TAGGING
+##################################
+
+  JourneyEventsAttributionTagging:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.lambda_handler
+      Role: !GetAtt JourneyEventsAttributionTaggingRole.Arn
+      Runtime: "python3.8"
+      Timeout: 60
+      Environment:
+        Variables:
+          PINPOINT_APP_ID: !Ref PinpointProjectId
+          COGNITO_USER_POOL_ID: !Ref CognitoUserPoolID
+          LOOKBACK_WINDOW_DAYS: !Ref LookbackWindow
+      Code:
+          S3Bucket: !Ref LambdaCodeBucketName
+          S3Key: "JourneyEventsAttribution_Tagging.zip"  
+
+  JourneyEventsAttributionTaggingRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+  
+  JourneyEventsAttributionTaggingRolePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      Roles:
+        - !Ref JourneyEventsAttributionTaggingRole
+      PolicyName: "root"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: CognitoAttributeUpdate
+            Effect: "Allow"
+            Action:
+              - "cognito-idp:*"
+            Resource: "*"
+          - Sid: DynamoDBCreateReadDelete
+            Effect: "Allow"
+            Action:
+              - "dynamodb:*"
+            Resource: "*"
+          - Sid: PinpointGetJourneyName
+            Effect: "Allow"
+            Action:
+              - "mobiletargeting:*"
+            Resource: !Sub "arn:aws:mobiletargeting:${AWS::Region}:${AWS::AccountId}:*"
+          - Sid: Logs
+            Effect: "Allow"
+            Action:
+              - "logs:CreateLogGroup"
+              - "logs:CreateLogStream"
+              - "logs:PutLogEvents"
+            Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+
+  JourneyEventsAttributionTaggingLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt JourneyEventsAttributionTagging.Arn
+      Principal: pinpoint.amazonaws.com
+      SourceArn: !Sub "arn:aws:mobiletargeting:${AWS::Region}:${AWS::AccountId}:apps/${PinpointProjectId}/journeys/*"
+
+#### LAMBDA COGNITO USERS EXPIRATION
+##################################
+
+  JourneyEventsAttributionExpiration:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.lambda_handler
+      Role: !GetAtt JourneyEventsAttributionExpirationRole.Arn
+      Runtime: "python3.8"
+      Timeout: 60
+      Environment:
+        Variables:
+          PINPOINT_APP_ID: !Ref PinpointProjectId
+          COGNITO_USER_POOL_ID: !Ref CognitoUserPoolID
+      Code:
+          S3Bucket: !Ref LambdaCodeBucketName
+          S3Key: "JourneyEventsAttribution_Expiration.zip" 
+
+  JourneyEventsAttributionExpirationRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+
+  JourneyEventsAttributionExpirationRolePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      Roles:
+        - !Ref JourneyEventsAttributionExpirationRole
+      PolicyName: "root"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: CognitoAttributeUpdate
+            Effect: "Allow"
+            Action:
+              - "cognito-idp:*"
+            Resource: "*"
+          - Sid: DynamoDBCreateReadDelete
+            Effect: "Allow"
+            Action:
+              - "dynamodb:*"
+            Resource: "*"
+          - Sid: Logs
+            Effect: "Allow"
+            Action:
+              - "logs:CreateLogGroup"
+              - "logs:CreateLogStream"
+              - "logs:PutLogEvents"
+            Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+  
+  JourneyEventsAttributionExpirationLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt JourneyEventsAttributionExpiration.Arn
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt CloudWatchLambdaExpiration.Arn
+
+#### CLOUDWATCH ALARM TRIGGER LAMBDA COGNITO USERS EXPIRATION
+##################################
+
+  CloudWatchLambdaExpiration:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: "EventsAttributionExpirationLambda"
+      Description: "Invokes JourneyEventsAttributionExpiration Lambda"
+      State: "ENABLED"
+      ScheduleExpression: "rate(1 day)"
+      Targets:
+        - 
+          Arn: !GetAtt JourneyEventsAttributionExpiration.Arn
+          Id: CloudWatchLambdaExpiration
+
+#### DYNAMO DB TABLES
+##################################
+
+  DynamoDBUserJourney:
+    Type: AWS::DynamoDB::Table
+    Properties: 
+      AttributeDefinitions: 
+      - AttributeName: user_journey
+        AttributeType: S
+      KeySchema: 
+      - AttributeName: user_journey
+        KeyType: HASH
+      ProvisionedThroughput: 
+        ReadCapacityUnits: '5'
+        WriteCapacityUnits: '5'
+      TableName: "pinpoint_journey_attribution"
