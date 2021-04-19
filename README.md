@@ -1,6 +1,7 @@
 # pinpoint-journey-events-attribution
 
 **Prerequisites**
+
 For this solution to work, you will need to use Amazon Cognito for user management.
 Detailed guide can be found in this repository in PDF format.
 
@@ -30,7 +31,7 @@ The solution is enabling marketers to attribute Pinpoint custom events following
 9)	Expired DynamoDB records based on their TTL attributed are not removed immediately
 
 ## Architecture
-![alt text](https://github.com/Pioank/pinpoint-journey-events-attribution/blob/main/Images/SolutionArchitecture.JPG)
+![alt text](https://github.com/Pioank/pinpoint-journey-events-attribution/blob/main/Images/Solution-Architecture.JPG)
 
 ## Business Logic User Tagging
 ![alt text](https://github.com/Pioank/pinpoint-journey-events-attribution/blob/main/Images/BusinessLogic-UserTagging.JPG)
