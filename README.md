@@ -1,5 +1,9 @@
 # pinpoint-journey-events-attribution
 
+**Prerequisites**
+For this solution to work, you will need to use Amazon Cognito for user management.
+Detailed guide can be found in this repository in PDF format.
+
 **Background**
 
 Marketing campaigns come with associated cost. Marketers use KPIs to assess their effectiveness and calculate ROI. While Pinpoint provides certain metrics such as email open/read, it does not allow marketers to attribute any custom events to Campaigns or Journeys. The latter results to a marketing spend without the possibility of ROI calculation and not knowing what works well for customers. 
@@ -23,6 +27,7 @@ The solution is enabling marketers to attribute Pinpoint custom events following
 6)	Applicable only for Pinpoint Journeys and requires a multivariate split step within the journey design
 7)	Push notification channel requires additional work 
 8)	Supports only one campaign per user at a time and if a user enters to a second campaign then the new campaign will overwrite the old one
+9)	Expired DynamoDB records based on their TTL attributed are not removed immediately
 
 ## Architecture
 ![alt text](https://github.com/Pioank/pinpoint-journey-events-attribution/blob/main/Images/SolutionArchitecture.JPG)
@@ -31,4 +36,4 @@ The solution is enabling marketers to attribute Pinpoint custom events following
 ![alt text](https://github.com/Pioank/pinpoint-journey-events-attribution/blob/main/Images/BusinessLogic-UserTagging.JPG)
 
 ## Business Logic User Expiration
-![alt text](https://github.com/Pioank/pinpoint-journey-events-attribution/blob/main/Images/BusinessLogic-UserExpiration.JPG)
+DynamoDB streams emit a REMOVE event Expiration Lambda, which is processing these records will update the Cognito custom user attribute Campaign to blank.
